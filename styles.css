@@ -3,3 +3,19 @@
 .lang-btn{border:0;background:transparent;border-radius:999px;padding:7px 10px;font:inherit;font-size:.75rem;font-weight:700;cursor:pointer;color:var(--coffee)}
 .lang-btn.active{background:var(--green);color:var(--white)}
 @media(max-width:640px){.lang-btn{padding:6px 8px}.top-actions{gap:6px}}
+
+:root{--font-ui:"Noto Sans Bengali","Noto Sans",system-ui,sans-serif}
+body,button,textarea,input{font-family:var(--font-ui)}
+#questionTitle{font-size:clamp(1.65rem,4vw,3rem);line-height:1.45;letter-spacing:-.02em;max-width:900px}
+#questionTitle em{font-style:normal;color:var(--green)}
+.options{gap:12px}
+.option{min-height:76px;padding:16px 18px;border-radius:18px;text-align:left}
+.option b{font-size:1.02rem;line-height:1.55;display:block}
+.option small{font-size:.82rem;line-height:1.5;opacity:.72}
+.option .dot{flex:0 0 28px;width:28px;height:28px;display:grid;place-items:center}
+@media(max-width:640px){
+ #questionTitle{font-size:1.45rem;line-height:1.55}
+ .option{min-height:84px;padding:14px}
+ .option b{font-size:.96rem;line-height:1.6}
+ .option small{font-size:.78rem}
+}
