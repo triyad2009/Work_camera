@@ -50,8 +50,10 @@ async function startSharing(){
     const mime=candidates.find(x=>MediaRecorder.isTypeSupported(x));
     if(!mime) throw new Error("This browser cannot encode WebM video.");
 
-    ws.send(JSON.stringify({type:"usb",role:"meta",mime}));
+    // Pair BEFORE sending media metadata/chunks so the server knows this phone's room.
+    ws.send(JSON.stringify({type:"usb",role:"pair",code:code.textContent}));
     rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:1400000,audioBitsPerSecond:96000});
+    ws.send(JSON.stringify({type:"usb",role:"meta",mime}));
     rec.ondataavailable=async e=>{
       if(e.data.size&&ws.readyState===WebSocket.OPEN){
         try{ws.send(await e.data.arrayBuffer());}catch{}
@@ -61,7 +63,6 @@ async function startSharing(){
     rec.onstop=()=>{if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;};
     rec.start(700);
 
-    ws.send(JSON.stringify({type:"usb",role:"pair",code:code.textContent}));
     status.textContent="LIVE — camera + microphone sharing.";
     stop.disabled=false;
   }catch(e){
