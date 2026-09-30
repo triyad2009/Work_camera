@@ -1,15 +1,58 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#06080b"><title>Work Camera — Phone</title>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#050608">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Work Camera</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#06080b;color:#f5f7fa;font-family:Inter,system-ui,sans-serif;min-height:100vh}.wrap{max-width:720px;margin:auto;padding:24px 16px 40px}.brand{display:flex;align-items:center;gap:10px;margin-bottom:28px}.logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#fff,#9da7b6);color:#080a0e;display:grid;place-items:center;font-weight:900}.eyebrow{font-size:10px;letter-spacing:.16em;color:#7e8898;text-transform:uppercase;font-weight:800}.hero h1{font-size:38px;line-height:1;letter-spacing:-.05em;margin:8px 0 10px}.muted{color:#87919f;line-height:1.55;font-size:14px}.card{background:linear-gradient(145deg,#11161e,#0b0e13);border:1px solid #222a35;border-radius:25px;padding:20px;margin-top:16px;box-shadow:0 20px 60px #0008}.codebox{text-align:center;padding:25px 12px;border-radius:20px;background:#080b10;border:1px solid #252d38;margin-top:16px}.code{font-size:42px;font-weight:900;letter-spacing:7px}.status{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:15px;color:#929cab;font-size:13px}.dot{width:8px;height:8px;border-radius:50%;background:#697386}.ok .dot{background:#64d890;box-shadow:0 0 15px #64d890}video{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#000;border-radius:18px;margin-top:15px}.videoStatus{font-size:13px;color:#8e98a6;margin-top:12px;text-align:center}.empty{padding:48px 15px;text-align:center;border:1px dashed #29313d;border-radius:18px;margin-top:15px;color:#737d8b}
-</style></head><body><main class="wrap">
-<div class="brand"><div class="logo">WC</div><div><b>Work Camera</b><div class="eyebrow">Connected phone</div></div></div>
-<section class="hero"><div class="eyebrow">PHONE PLAYER</div><h1>Ready to play.</h1><p class="muted">Keep this page open. Give the code below to the PC dashboard. A video sent from the PC will appear here.</p></section>
-<section class="card"><div class="eyebrow">PAIRING CODE</div><div class="codebox"><div class="code" id="code">------</div><div id="status" class="status"><span class="dot"></span><span>Connecting…</span></div></div></section>
-<section class="card"><div class="eyebrow">REMOTE VIDEO</div><h2 style="margin:8px 0 0">Your video</h2><div id="empty" class="empty">Waiting for the PC to send a video…</div><video id="player" controls playsinline style="display:none"></video><div id="videoStatus" class="videoStatus"></div></section>
+:root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050608;color:#f7f8fa;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{min-height:100dvh}.app{height:100dvh;min-height:100dvh;position:relative;overflow:hidden;background:radial-gradient(120% 80% at 50% -10%,#202734 0,#0b0e14 42%,#050608 100%)}
+.app:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 85% 15%,rgba(255,255,255,.07),transparent 26%),radial-gradient(circle at 10% 90%,rgba(115,145,190,.07),transparent 30%)}
+.top{position:absolute;z-index:5;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 16px) 18px 14px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(#050608dd,transparent)}
+.brand{display:flex;align-items:center;gap:10px}.logo{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#fff,#9da6b5);color:#07090d;font-weight:950;box-shadow:0 8px 25px #0008}.brandname{font-weight:850;font-size:14px}.live{display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid #ffffff16;background:#ffffff08;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.12em;color:#9da6b5}.live i{width:7px;height:7px;border-radius:50%;background:#687283}.live.ok i{background:#62dc91;box-shadow:0 0 12px #62dc91}
+.content{height:100%;position:relative;z-index:2;display:flex;flex-direction:column;padding:0 16px}
+.pair{margin:auto 0 0;padding-top:90px;text-align:center;transition:.35s}.eyebrow{font-size:10px;letter-spacing:.2em;color:#7f8998;font-weight:850}.headline{font-size:clamp(40px,12vw,64px);line-height:.92;letter-spacing:-.065em;font-weight:900;margin:11px 0 12px}.sub{max-width:330px;margin:auto;color:#8993a2;font-size:13px;line-height:1.5}
+.code-shell{width:min(360px,100%);margin:26px auto 0;padding:10px;border:1px solid #ffffff10;background:#ffffff05;border-radius:25px;box-shadow:0 20px 70px #0008}.code-inner{padding:22px 12px;border-radius:17px;background:#07090d;border:1px solid #ffffff0c}.code{font-variant-numeric:tabular-nums;font-size:clamp(38px,12vw,54px);font-weight:950;letter-spacing:.16em;margin-left:.16em}.status{margin-top:13px;color:#737d8c;font-size:11px;display:flex;justify-content:center;align-items:center;gap:7px}.dot{width:7px;height:7px;border-radius:50%;background:#687283}.ok .dot{background:#62dc91;box-shadow:0 0 13px #62dc91}
+.bottom{margin:auto 0 0;padding:20px 0 calc(env(safe-area-inset-bottom) + 18px);text-align:center}.hint{font-size:10px;color:#596270;letter-spacing:.04em}.pill{display:inline-flex;margin-top:12px;padding:8px 12px;border:1px solid #ffffff0d;border-radius:999px;background:#ffffff04;color:#7e8795;font-size:10px}
+.player-view{display:none;position:absolute;inset:0;z-index:4;background:#000;align-items:center;justify-content:center}.player-view.show{display:flex}.player{width:100%;height:100%;object-fit:contain;background:#000}.player-ui{position:absolute;z-index:5;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 18px);display:flex;justify-content:center;pointer-events:none}.player-label{padding:9px 13px;border-radius:999px;background:#0009;border:1px solid #fff2;color:#dce1e8;font-size:10px;backdrop-filter:blur(12px)}
+@media(max-height:650px){.headline{font-size:42px}.code-shell{margin-top:16px}.pair{padding-top:70px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+<div class="brand"><div class="logo">WC</div><div class="brandname">Work Camera</div></div>
+<div class="live" id="live"><i></i><span id="liveText">CONNECTING</span></div>
+</header>
+<main class="content">
+<section class="pair" id="pair">
+<div class="eyebrow">PHONE PLAYER</div>
+<h1 class="headline">Ready.<br>Stay connected.</h1>
+<p class="sub">Keep this screen open. Enter the code below on your PC dashboard to pair this phone.</p>
+<div class="code-shell"><div class="code-inner"><div class="eyebrow">PAIRING CODE</div><div class="code" id="code">------</div><div class="status" id="status"><span class="dot"></span><span>Connecting to server…</span></div></div></div>
+</section>
+<footer class="bottom"><div class="hint">VIDEO WILL APPEAR HERE</div><div class="pill">Secure local connection</div></footer>
 </main>
+<section class="player-view" id="playerView">
+<video class="player" id="player" controls playsinline></video>
+<div class="player-ui"><div class="player-label" id="videoStatus">VIDEO RECEIVED</div></div>
+</section>
+</div>
 <script>
-const code=document.getElementById("code"),status=document.getElementById("status"),player=document.getElementById("player"),empty=document.getElementById("empty"),videoStatus=document.getElementById("videoStatus");const ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host);
-function stat(t,ok=false){status.innerHTML='<span class="dot"></span><span>'+t+'</span>';status.classList.toggle("ok",ok)}
-ws.onopen=()=>ws.send(JSON.stringify({type:"usb",role:"phone"}));ws.onclose=()=>stat("Disconnected from server.");ws.onmessage=e=>{if(typeof e.data!=="string")return;const m=JSON.parse(e.data);if(m.type==="usb-code"){code.textContent=m.code;stat("Give this code to the PC dashboard.");}if(m.type==="usb-ready")stat("PC connected. Waiting for video…",true);if(m.type==="usb-error")stat(m.message);if(m.type==="video"){empty.style.display="none";player.style.display="block";player.src=m.url;player.load();videoStatus.textContent="Video received. Starting playback…";player.play().catch(()=>videoStatus.textContent="Ready — tap Play if your browser blocks autoplay.");}};
-</script></body></html>
+const code=document.getElementById("code"),status=document.getElementById("status"),live=document.getElementById("live"),liveText=document.getElementById("liveText"),playerView=document.getElementById("playerView"),player=document.getElementById("player"),videoStatus=document.getElementById("videoStatus");
+function setStatus(t,ok=false){status.innerHTML='<span class="dot"></span><span>'+t+'</span>';status.classList.toggle("ok",ok);live.classList.toggle("ok",ok);liveText.textContent=ok?"CONNECTED":"CONNECTING"}
+const ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host);
+ws.onopen=()=>{ws.send(JSON.stringify({type:"usb",role:"phone"}));setStatus("Generating pairing code…")};
+ws.onclose=()=>{setStatus("Connection lost — waiting…");live.classList.remove("ok");liveText.textContent="OFFLINE"};
+ws.onerror=()=>setStatus("Unable to connect");
+ws.onmessage=e=>{if(typeof e.data!=="string")return;let m;try{m=JSON.parse(e.data)}catch{return}
+if(m.type==="usb-code"){code.textContent=m.code;setStatus("Give this code to the PC dashboard.")}
+if(m.type==="usb-ready"){setStatus("PC connected • waiting for video",true)}
+if(m.type==="usb-error"){setStatus(m.message)}
+if(m.type==="video"){player.src=m.url;player.load();playerView.classList.add("show");videoStatus.textContent="VIDEO RECEIVED";player.play().catch(()=>{videoStatus.textContent="TAP PLAY TO START"});}}
+</script>
+</body>
+</html>
