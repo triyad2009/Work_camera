@@ -25,7 +25,43 @@ const opts=[
 ["Protect balance and capacity","Sustainability","wellbeing"],
 ["Keep options open and gather evidence","Flexibility","exploration"]
 ];
-function buildQuestions(){let out=[],id=1;for(const [cat,dim,topics] of cats){topics.forEach(topic=>{out.push({id:id++,category:cat,dimension:dim,text:"How do you currently approach your "+topic+"?",options:opts.map((x,i)=>({id:String(i),text:x[0],hint:x[1]+" • "+x[2],value:i,tags:[dim,x[2]]})).concat([{id:"other",text:"Other — explain in your own words",hint:"Custom response",value:0,other:true,tags:["Custom"]}])})})}return out}
+function buildQuestions(){
+ let out=[],id=1;
+ const qFrames={
+ "Goals & Dreams":"How important is {topic} to you right now?",
+ "Values & Priorities":"When it comes to {topic}, which approach feels most right to you?",
+ "Personality & Mindset":"When you face {topic}, what do you usually do?",
+ "Strengths & Weaknesses":"When dealing with {topic}, which description fits you best?",
+ "Education & Knowledge":"For {topic}, how would you like to learn or improve?",
+ "Career & Work":"For {topic}, which work approach fits you best?",
+ "Finance & Security":"For {topic}, which financial approach feels most realistic?",
+ "Skills & Capability":"For {topic}, which way of improving suits you best?",
+ "Time & Habits":"For {topic}, which approach would work best for you?",
+ "Relationships & Social Life":"When it comes to {topic}, which approach feels most like you?",
+ "Family & Responsibilities":"For {topic}, which approach would help you most?",
+ "Lifestyle & Environment":"For {topic}, which choice would make your daily life better?",
+ "Well-being & Energy":"For {topic}, which approach would help you most?",
+ "Entrepreneurship & Projects":"For {topic}, which way would you prefer to move forward?",
+ "Motivation & Discipline":"For {topic}, which approach would help you stay consistent?"
+ };
+ const answerFrames=[
+ ["Start working on {topic} now","Make a clear plan for {topic} first","Try a small version of {topic}","Ask an experienced person about {topic}","Protect enough time and energy for {topic}","Learn more before deciding about {topic}"]
+ ];
+ for(const [cat,dim,topics] of cats){
+   topics.forEach(topic=>{
+     const frame=qFrames[cat]||"How do you feel about {topic}?";
+     const texts=answerFrames[0];
+     out.push({
+       id:id++,category:cat,dimension:dim,topic,
+       text:frame.replace("{topic}",topic),
+       options:texts.map((t,i)=>({id:String(i),text:t.replace("{topic}",topic),hint:["Take action","Make it practical","Learn by doing","Get another perspective","Protect balance","Gather evidence"][i],value:i,tags:[dim,cat]})).concat([
+         {id:"other",text:"Other — explain it in your own words",hint:"Your own answer",value:0,other:true,tags:["Custom"]}
+       ])
+     });
+   });
+ }
+ return out;
+}
 const questions=buildQuestions();
 let state={index:0,answers:{},started:false};
 const $=id=>document.getElementById(id);
