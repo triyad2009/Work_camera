@@ -76,4 +76,84 @@ function render(){const q=questions[state.index],a=state.answers[q.id]||{},u=UI[
 $("bnBtn").onclick=()=>{lang="bn";localStorage.setItem("lifeos-lang","bn");render();};
 $("enBtn").onclick=()=>{lang="en";localStorage.setItem("lifeos-lang","en");render();};
 function applyLangButtons(){$("bnBtn").classList.toggle("active",lang==="bn");$("enBtn").classList.toggle("active",lang==="en");}
-applyLangButtons();
+applyLangButtons();function choose(id){
+ const q=questions[state.index];
+ state.answers[q.id]={option:id,other:id==="other"?$("otherInput").value:""};
+ render(); save();
+}
+$("otherInput").oninput=()=>{
+ const q=questions[state.index];
+ if(state.answers[q.id]){state.answers[q.id].other=$("otherInput").value;save();}
+};
+$("startBtn").onclick=()=>{
+ state={index:0,answers:{},started:true};
+ save(); show("assessment"); render();
+};
+$("resumeBtn").onclick=()=>{show("assessment");render();};
+$("resetBtn").onclick=()=>{
+ if(confirm(lang==="bn"?"সব saved progress মুছে ফেলবেন?":"Reset all saved progress?")){
+   localStorage.removeItem("lifeos-v1");
+   state={index:0,answers:{},started:false};
+   $("resumeBtn").classList.add("hidden"); show("intro");
+ }
+};
+$("backBtn").onclick=()=>{
+ if(state.index>0){state.index--;render();save();}
+};
+$("nextBtn").onclick=()=>{
+ const q=questions[state.index];
+ if(!state.answers[q.id]?.option)return;
+ if(state.index<TOTAL-1){state.index++;render();save();}
+ else{results();show("results");}
+};
+$("retakeBtn").onclick=()=>{
+ state={index:0,answers:{},started:true};
+ save();show("assessment");render();
+};
+function score(){
+ const s=Object.fromEntries(DIMS.map(d=>[d,0]));
+ const c=Object.fromEntries(DIMS.map(d=>[d,0]));
+ Object.entries(state.answers).forEach(([id,a])=>{
+   const q=questions.find(x=>x.id==id);
+   const o=q&&q.options.find(x=>x.id===a.option);
+   if(q&&o&&!o.other){s[q.dimension]+=5-o.value;c[q.dimension]+=5;}
+ });
+ const n={};
+ DIMS.forEach(d=>n[d]=Math.round((s[d]/Math.max(1,c[d]))*100));
+ return n;
+}
+function sorted(s,asc){return Object.entries(s).sort((a,b)=>asc?a[1]-b[1]:b[1]-a[1]);}
+function results(){
+ const sc=score(),hi=sorted(sc,false).slice(0,4),lo=sorted(sc,true).slice(0,4);
+ $("resultSummary").textContent=lang==="bn"?"আপনার ফলাফল আপনার উত্তরগুলোর pattern দেখায়। এগুলো diagnosis বা ভবিষ্যদ্বাণী নয়।":"Your results summarize answer patterns; they are not diagnoses or predictions.";
+ $("profileGrid").innerHTML=DIMS.map(d=>'<div class="profile-card"><div class="label">'+(lang==="bn"?(BN_CAT[d]||d):d).toUpperCase()+'</div><div class="score">'+sc[d]+'</div><div class="meter"><span style="width:'+sc[d]+'%"></span></div></div>').join("");
+ $("drivers").innerHTML="<ul>"+hi.map(x=>"<li><b>"+x[0]+"</b> — "+x[1]+"/100</li>").join("")+"</ul>";
+ $("bottlenecks").innerHTML="<ul>"+lo.map(x=>"<li><b>"+x[0]+"</b> — "+x[1]+"/100</li>").join("")+"</ul>";
+ $("roadmap").innerHTML=lang==="bn"?"<ul><li>একটি প্রধান ৯০ দিনের লক্ষ্য ঠিক করুন।</li><li>একটি measurable ৩০ দিনের milestone নিন।</li><li>প্রতি সপ্তাহে ৩–৫টি focus block রাখুন।</li><li>প্রতি সপ্তাহে ফলাফল, বাধা ও পরবর্তী পদক্ষেপ review করুন।</li></ul>":"<ul><li>Choose one primary 90-day outcome.</li><li>Set one measurable 30-day milestone.</li><li>Protect 3–5 recurring focus blocks every week.</li><li>Review weekly: evidence, obstacle, next action.</li></ul>";
+ $("promptOutput").value=makePrompt(sc,hi,lo);
+}
+function makePrompt(sc,hi,lo){
+ let p=lang==="bn"?"আপনি আমার Life Strategy AI। আমার সিদ্ধান্ত আমার; আপনি নিরপেক্ষভাবে তথ্য, trade-off এবং বাস্তব পরিকল্পনা দিন।\n\nLIFEOS PROFILE\n":"You are my Life Strategy AI. My decisions are mine; give me neutral information, trade-offs and practical plans.\n\nLIFEOS PROFILE\n";
+ DIMS.forEach(d=>p+="- "+d+": "+sc[d]+"/100\n");
+ p+="\n"+(lang==="bn"?"প্রধান signal:\n":"STRONGEST SIGNALS\n");
+ hi.forEach(x=>p+="- "+x[0]+": "+x[1]+"/100\n");
+ p+="\n"+(lang==="bn"?"যেসব জায়গায় system দরকার হতে পারে:\n":"AREAS THAT MAY NEED SYSTEMS\n");
+ lo.forEach(x=>p+="- "+x[0]+": "+x[1]+"/100\n");
+ p+="\n"+(lang==="bn"?"পরিকল্পনা তৈরি করুন: ৫ বছর → ১ বছর → ৯০ দিন → ৩০ দিন → ৭ দিন। প্রতিটি লক্ষ্যতে outcome, metric, deadline, first action, recurring action, obstacle এবং fallback দিন।":"Build a plan: 5 years → 1 year → 90 days → 30 days → 7 days. For each goal include outcome, metric, deadline, first action, recurring action, obstacle and fallback.");
+ return p;
+}
+$("copyBtn").onclick=async()=>{
+ try{await navigator.clipboard.writeText($("promptOutput").value);$("copyBtn").textContent=lang==="bn"?"কপি হয়েছে ✓":"Copied ✓";setTimeout(()=>renderResultsUI(),1200);}
+ catch(e){$("promptOutput").select();document.execCommand("copy");}
+};
+$("downloadBtn").onclick=()=>{
+ const b=new Blob([$("promptOutput").value],{type:"text/plain;charset=utf-8"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="lifeos-master-prompt.txt";a.click();URL.revokeObjectURL(a.href);
+};
+$("chatgptBtn").onclick=()=>window.open("https://chatgpt.com/","_blank");
+$("claudeBtn").onclick=()=>window.open("https://claude.ai/","_blank");
+$("geminiBtn").onclick=()=>window.open("https://gemini.google.com/","_blank");
+function renderResultsUI(){
+ $("copyBtn").textContent=lang==="bn"?"Prompt কপি করুন":"Copy prompt";
+}
+load();
