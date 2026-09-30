@@ -2,13 +2,80 @@
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Work Camera — PC</title>
 <style>body{font-family:system-ui;background:#101318;color:#f7f7f5;max-width:1000px;margin:auto;padding:24px}video{width:100%;max-height:75vh;border-radius:18px;background:#000}.box{padding:18px;border-radius:16px;background:#1b2028;margin:14px 0}input,button{padding:13px;border-radius:10px;border:0;font-size:16px}button{font-weight:700;margin-left:6px}</style></head>
 <body><h1>USB Work Camera — PC</h1><div class="box"><label>Phone connection code:</label><input id="code" inputmode="numeric" maxlength="6" placeholder="123456"><button id="connect">Connect</button><p id="status">Enter the 6-digit code shown on the phone.</p></div>
-<video id="remote" autoplay playsinline controls></video>
+<video id="remote" autoplay playsinline controls muted></video>
 <script>
-const ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host),v=document.getElementById("remote"),s=document.getElementById("status"),input=document.getElementById("code"),connect=document.getElementById("connect");let ms,sb,q=[],mime;
-ws.onopen=()=>s.textContent="Connected to server. Enter the phone code.";
-connect.onclick=()=>{const c=input.value.trim();if(!/^\d{6}$/.test(c)){s.textContent="Enter a valid 6-digit code.";return;}ws.send(JSON.stringify({type:"usb",role:"pc",code:c}));s.textContent="Checking code…";};
-ws.onmessage=async e=>{if(typeof e.data==="string"){const m=JSON.parse(e.data);if(m.type==="usb-error")s.textContent=m.message;if(m.type==="usb-ready")s.textContent="Connected. Tap Start on the phone.";if(m.type==="meta"){mime=m.mime;init(mime);s.textContent="LIVE — phone camera + microphone received.";}}else{const b=await e.data.arrayBuffer();if(!ms)init();q.push(b);pump();}};
-function init(m){mime=m||"video/webm;codecs=vp8,opus";ms=new MediaSource();v.src=URL.createObjectURL(ms);ms.addEventListener("sourceopen",()=>{try{sb=ms.addSourceBuffer(mime);sb.mode="sequence";sb.addEventListener("updateend",pump);pump();}catch(e){s.textContent="Playback error: "+e.message;}});}
-function pump(){if(!sb||sb.updating||!q.length)return;try{sb.appendBuffer(q.shift());}catch(e){q.shift();pump();}}
-ws.onclose=()=>s.textContent="Disconnected.";
+const ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host);
+const v=document.getElementById("remote"),s=document.getElementById("status"),input=document.getElementById("code"),connect=document.getElementById("connect");
+let ms=null,sb=null,q=[],mime=null,sourceReady=false;
+
+ws.onopen=()=>s.textContent="Connected. Enter the phone code.";
+ws.onclose=()=>s.textContent="Disconnected from server.";
+
+connect.onclick=()=>{
+  const c=input.value.trim();
+  if(!/^\d{6}$/.test(c)){s.textContent="Enter a valid 6-digit code.";return;}
+  connect.disabled=true;
+  ws.send(JSON.stringify({type:"usb",role:"pc",code:c}));
+  s.textContent="Connecting to phone…";
+};
+
+ws.onmessage=async e=>{
+  if(typeof e.data==="string"){
+    const m=JSON.parse(e.data);
+    if(m.type==="usb-error"){s.textContent=m.message;connect.disabled=false;return;}
+    if(m.type==="usb-ready"){s.textContent="Phone connected. Camera permission will be requested on the phone.";}
+    if(m.type==="meta"){setupPlayer(m.mime);}
+    if(m.type==="usb-stop"){resetPlayer();s.textContent="Phone sharing stopped.";}
+    return;
+  }
+  const b=await e.data.arrayBuffer();
+  q.push(b);
+  pump();
+};
+
+function setupPlayer(nextMime){
+  mime=nextMime||"video/webm;codecs=vp8,opus";
+  if(!("MediaSource" in window)){s.textContent="This PC browser does not support MediaSource.";return;}
+  const candidates=[mime,"video/webm;codecs=vp8,opus","video/webm;codecs=vp8","video/webm"];
+  mime=candidates.find(x=>MediaSource.isTypeSupported(x));
+  if(!mime){s.textContent="PC browser cannot play the phone's WebM stream.";return;}
+
+  resetPlayer();
+  ms=new MediaSource();
+  v.src=URL.createObjectURL(ms);
+  ms.addEventListener("sourceopen",()=>{
+    try{
+      sb=ms.addSourceBuffer(mime);
+      sourceReady=true;
+      sb.addEventListener("updateend",pump);
+      sb.addEventListener("error",()=>s.textContent="Playback buffer error.");
+      pump();
+    }catch(e){s.textContent="Playback setup error: "+e.message;}
+  },{once:true});
+}
+
+function pump(){
+  if(!sourceReady||!sb||sb.updating||!q.length)return;
+  try{
+    sb.appendBuffer(q.shift());
+    if(v.paused)v.play().catch(()=>{});
+    s.textContent="LIVE — phone camera received.";
+  }catch(e){
+    if(e.name==="QuotaExceededError"&&sb.buffered.length){
+      const end=Math.max(0,v.currentTime-5);
+      try{sb.remove(0,end);}catch{}
+    }else{
+      s.textContent="Stream buffer error: "+e.message;
+      q=[];
+    }
+  }
+}
+
+function resetPlayer(){
+  q=[];
+  sourceReady=false;
+  sb=null;
+  if(ms&&ms.readyState==="open"){try{ms.endOfStream();}catch{}}
+  ms=null;
+}
 </script></body></html>
