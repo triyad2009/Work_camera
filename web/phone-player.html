@@ -1,0 +1,30 @@
+<!doctype html>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Work Camera — Phone</title>
+<style>
+body{font-family:system-ui;background:#0b0d10;color:#f7f7f5;max-width:720px;margin:auto;padding:22px}
+.card{background:#151a21;border:1px solid #252c36;padding:20px;border-radius:20px;margin:14px 0}
+h1{font-size:30px}.muted{color:#9da7b3}.code{font-size:42px;font-weight:800;letter-spacing:7px;text-align:center;padding:12px}
+video{width:100%;border-radius:18px;background:#000;display:block}.status{padding:12px;border-radius:12px;background:#0e1217;margin-top:12px}
+</style></head>
+<body>
+<h1>Work Camera</h1>
+<div class="card"><div class="muted">Phone connection code</div><div class="code" id="code">------</div><div id="status" class="status">Connecting to PC…</div></div>
+<div class="card"><h2>Remote Video</h2><video id="player" controls playsinline></video><div id="videoStatus" class="status">Waiting for a video from the PC…</div></div>
+<script>
+const code=document.getElementById("code"),status=document.getElementById("status"),player=document.getElementById("player"),videoStatus=document.getElementById("videoStatus");
+const ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host);
+ws.onopen=()=>ws.send(JSON.stringify({type:"usb",role:"phone"}));
+ws.onclose=()=>status.textContent="Disconnected from PC.";
+ws.onmessage=e=>{
+ if(typeof e.data!=="string")return;
+ const m=JSON.parse(e.data);
+ if(m.type==="usb-code"){code.textContent=m.code;status.textContent="Give this code to the PC dashboard.";}
+ if(m.type==="usb-ready"){status.textContent="✓ PC connected. Waiting for video…";}
+ if(m.type==="usb-error")status.textContent=m.message;
+ if(m.type==="video"){
+   player.src=m.url;player.load();videoStatus.textContent="Video received from PC. Playing…";
+   player.play().catch(()=>{videoStatus.textContent="Video ready — tap Play if autoplay is blocked.";});
+ }
+};
+</script>
+</body></html>
