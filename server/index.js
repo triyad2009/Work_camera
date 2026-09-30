@@ -22,17 +22,17 @@ app.post("/api/invite",(req,res)=>{
 app.get("/join/:room",(req,res)=>res.sendFile(path.join(__dirname,"..","web","member.html")));
 app.get("/view/:room",(req,res)=>res.sendFile(path.join(__dirname,"..","web","owner.html")));
 
-function send(ws,msg){
-  if(ws&&ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify(msg));
-}
-
+function send(ws,msg){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(msg));}
 function usbRoom(){
   let room=rooms.get("usb-local");
-  if(!room){
-    room={phone:null,usbViewer:null,phoneLive:false};
-    rooms.set("usb-local",room);
-  }
+  if(!room){room={phone:null,usbViewer:null,phoneLive:false};rooms.set("usb-local",room);}
   return room;
+}
+function validVideoUrl(value){
+  try{
+    const u=new URL(String(value));
+    return u.protocol==="http:"||u.protocol==="https:";
+  }catch{return false;}
 }
 
 wss.on("connection",ws=>{
@@ -40,8 +40,7 @@ wss.on("connection",ws=>{
     if(isBinary){
       const r=ws.room;
       if(ws.usbRole==="phone"&&r?.usbViewer?.readyState===WebSocket.OPEN){
-        r.phoneLive=true;
-        r.usbViewer.send(raw);
+        r.phoneLive=true;r.usbViewer.send(raw);
       }
       return;
     }
@@ -53,51 +52,49 @@ wss.on("connection",ws=>{
       const room=usbRoom();
 
       if(m.role==="phone"){
-        ws.usbRole="phone";
-        room.phone=ws;
-        ws.room=room;
+        ws.usbRole="phone";room.phone=ws;ws.room=room;
         send(ws,{type:"usb-code",code:usbCode});
-        if(room.usbViewer) send(ws,{type:"usb-ready"});
+        if(room.usbViewer)send(ws,{type:"usb-ready"});
         return;
       }
 
       if(m.role==="pc"){
-        if(String(m.code)!==usbCode){
-          send(ws,{type:"usb-error",message:"Invalid code"});
-          return;
-        }
-        room.usbViewer=ws;
-        ws.usbRole="pc";
-        ws.room=room;
-        room.phoneLive=false;
+        if(String(m.code)!==usbCode){send(ws,{type:"usb-error",message:"Invalid code"});return;}
+        room.usbViewer=ws;ws.usbRole="pc";ws.room=room;room.phoneLive=false;
         send(ws,{type:"usb-ready"});
-        if(room.phone) send(room.phone,{type:"usb-ready"});
+        if(room.phone)send(room.phone,{type:"usb-ready"});
         return;
       }
 
       if(m.role==="pair"){
         if(ws.usbRole!=="phone"||String(m.code)!==usbCode){
-          send(ws,{type:"usb-error",message:"Pairing failed"});
-          return;
+          send(ws,{type:"usb-error",message:"Pairing failed"});return;
         }
-        room.phone=ws;
-        ws.room=room;
-        if(room.usbViewer) send(ws,{type:"usb-ready"});
+        room.phone=ws;ws.room=room;
+        if(room.usbViewer)send(ws,{type:"usb-ready"});
+        return;
+      }
+
+      if(m.role==="video"){
+        if(ws.usbRole!=="pc"||String(m.code)!==usbCode)return;
+        if(!validVideoUrl(m.url)){send(ws,{type:"usb-error",message:"Enter a valid http/https video URL"});return;}
+        if(!room.phone){send(ws,{type:"usb-error",message:"Phone is not connected"});return;}
+        send(room.phone,{type:"video",url:String(m.url)});
+        send(ws,{type:"video-sent",url:String(m.url)});
         return;
       }
 
       if(m.role==="meta"){
-        if(ws.usbRole!=="phone") return;
-        if(room.usbViewer) send(room.usbViewer,m);
+        if(ws.usbRole!=="phone")return;
+        if(room.usbViewer)send(room.usbViewer,m);
         return;
       }
 
       if(m.role==="stop"){
         room.phoneLive=false;
-        if(room.usbViewer) send(room.usbViewer,{type:"usb-stop"});
+        if(room.usbViewer)send(room.usbViewer,{type:"usb-stop"});
         return;
       }
-
       return;
     }
 
@@ -123,8 +120,7 @@ wss.on("connection",ws=>{
     if(r.owner===ws)r.owner=null;
     if(r.member===ws)r.member=null;
     if(r.phone===ws){
-      r.phone=null;
-      r.phoneLive=false;
+      r.phone=null;r.phoneLive=false;
       if(r.usbViewer)send(r.usbViewer,{type:"usb-stop"});
     }
     if(r.usbViewer===ws)r.usbViewer=null;
