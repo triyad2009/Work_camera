@@ -63,97 +63,158 @@ function buildQuestions(){
  return out;
 }
 const questions=buildQuestions();
+const DIMS_BN={"Goals":"লক্ষ্য","Career":"ক্যারিয়ার","Finance":"অর্থ","Education":"শিক্ষা","Discipline":"শৃঙ্খলা","Leadership":"নেতৃত্ব","Creativity":"সৃজনশীলতা","Risk Tolerance":"ঝুঁকি গ্রহণ","Relationships":"সম্পর্ক","Well-being":"সুস্থতা","Time Capacity":"সময় সক্ষমতা","Growth":"উন্নতি"};
+const CAT_BN={"Goals & Dreams":"লক্ষ্য ও স্বপ্ন","Values & Priorities":"মূল্যবোধ ও অগ্রাধিকার","Personality & Mindset":"ব্যক্তিত্ব ও মানসিকতা","Strengths & Weaknesses":"শক্তি ও দুর্বলতা","Education & Knowledge":"শিক্ষা ও জ্ঞান","Career & Work":"ক্যারিয়ার ও কাজ","Finance & Security":"অর্থ ও নিরাপত্তা","Skills & Capability":"দক্ষতা ও সক্ষমতা","Time & Habits":"সময় ও অভ্যাস","Relationships & Social Life":"সম্পর্ক ও সামাজিক জীবন","Family & Responsibilities":"পরিবার ও দায়িত্ব","Lifestyle & Environment":"জীবনযাপন ও পরিবেশ","Well-being & Energy":"সুস্থতা ও শক্তি","Entrepreneurship & Projects":"উদ্যোক্তা ও প্রকল্প","Motivation & Discipline":"প্রেরণা ও শৃঙ্খলা"};
+const UI={
+ en:{meta:"Choose the answer that best matches you.",other:"Other — explain in your own words",placeholder:"Your answer…",back:"← Back",next:"Continue →",build:"Build my blueprint →",saved:"Saved",ready:"Ready"},
+ bn:{meta:"আপনার সঙ্গে সবচেয়ে বেশি মেলে এমন উত্তরটি বেছে নিন।",other:"অন্যান্য — নিজের ভাষায় লিখুন",placeholder:"আপনার উত্তর…",back:"← পেছনে",next:"চালিয়ে যান →",build:"আমার ব্লুপ্রিন্ট তৈরি করুন →",saved:"সংরক্ষিত",ready:"প্রস্তুত"}
+};
 let lang=localStorage.getItem("lifeos-lang")||"bn";
-const BN_CAT={"Goals & Dreams":"লক্ষ্য ও স্বপ্ন","Values & Priorities":"মূল্যবোধ ও অগ্রাধিকার","Personality & Mindset":"ব্যক্তিত্ব ও মানসিকতা","Strengths & Weaknesses":"শক্তি ও দুর্বলতা","Education & Knowledge":"শিক্ষা ও জ্ঞান","Career & Work":"ক্যারিয়ার ও কাজ","Finance & Security":"অর্থ ও নিরাপত্তা","Skills & Capability":"দক্ষতা ও সক্ষমতা","Time & Habits":"সময় ও অভ্যাস","Relationships & Social Life":"সম্পর্ক ও সামাজিক জীবন","Family & Responsibilities":"পরিবার ও দায়িত্ব","Lifestyle & Environment":"জীবনযাপন ও পরিবেশ","Well-being & Energy":"সুস্থতা ও শক্তি","Entrepreneurship & Projects":"উদ্যোক্তা ও প্রকল্প","Motivation & Discipline":"প্রেরণা ও শৃঙ্খলা"};
-const UI={en:{meta:"Choose the answer that best matches you.",other:"Other — explain it in your own words",placeholder:"Your answer…",back:"← Back",next:"Continue →",build:"Build my blueprint →"},bn:{meta:"আপনার সঙ্গে সবচেয়ে বেশি মেলে এমন উত্তরটি বেছে নিন।",other:"অন্যান্য — নিজের ভাষায় লিখুন",placeholder:"আপনার উত্তর…",back:"← পেছনে",next:"চালিয়ে যান →",build:"আমার ব্লুপ্রিন্ট তৈরি করুন →"}};
 let state={index:0,answers:{},started:false};
 const $=id=>document.getElementById(id);
 const screens={intro:$("intro"),assessment:$("assessment"),results:$("results")};
-function save(){localStorage.setItem("lifeos-v1",JSON.stringify(state));$("saveStatus").textContent="Saved";setTimeout(()=>$("saveStatus").textContent="Ready",900)}
-function load(){try{const s=JSON.parse(localStorage.getItem("lifeos-v1"));if(s&&s.answers){state=s;$("resumeBtn").classList.remove("hidden")}}catch(e){}}
-function show(k){Object.values(screens).forEach(x=>x.classList.remove("active"));screens[k].classList.add("active");scrollTo({top:0,behavior:"smooth"})}
-function render(){const q=questions[state.index],a=state.answers[q.id]||{},u=UI[lang];$("categoryLabel").textContent=(lang==="bn"?(BN_CAT[q.category]||q.category):q.category).toUpperCase();$("questionTitle").textContent=lang==="bn"?"এই বিষয়টি নিয়ে আপনার জন্য কোনটি সবচেয়ে গুরুত্বপূর্ণ? "+q.topic+"?":q.text;$("currentNo").textContent=state.index+1;$("progressBar").style.width=((state.index+1)/TOTAL*100)+"%";$("questionMeta").textContent=u.meta;$("options").innerHTML=q.options.map(o=>'<button class="option '+(a.option===o.id?"selected":"")+'" data-id="'+o.id+'"><span class="dot">✓</span><span><b>'+ (lang==="bn"?(o.other?u.other:o.textBN):o.text) +'</b><small>'+ (lang==="bn"?(o.other?"নিজের উত্তর":"একটি সম্ভাব্য পথ"):o.hint) +'</small></span></button>').join("");$("otherWrap").classList.toggle("hidden",a.option!=="other");$("otherInput").value=a.other||"";$("otherInput").placeholder=u.placeholder;$("nextBtn").disabled=!a.option;$("nextBtn").textContent=state.index===TOTAL-1?u.build:u.next;document.querySelectorAll(".option").forEach(b=>b.onclick=()=>choose(b.dataset.id));$("backBtn").textContent=u.back;$("otherLabel").textContent=u.other};
-$("bnBtn").onclick=()=>{lang="bn";localStorage.setItem("lifeos-lang","bn");render();};
-$("enBtn").onclick=()=>{lang="en";localStorage.setItem("lifeos-lang","en");render();};
-function applyLangButtons(){$("bnBtn").classList.toggle("active",lang==="bn");$("enBtn").classList.toggle("active",lang==="en");}
-applyLangButtons();function choose(id){
+
+function save(){
+ localStorage.setItem("lifeos-v2",JSON.stringify(state));
+ if($("saveStatus")){ $("saveStatus").textContent=UI[lang].saved; setTimeout(()=>{if($("saveStatus"))$("saveStatus").textContent=UI[lang].ready},800); }
+}
+function load(){
+ try{
+  const raw=localStorage.getItem("lifeos-v2");
+  if(!raw)return;
+  const saved=JSON.parse(raw);
+  if(saved&&saved.answers){
+   state={index:Math.max(0,Math.min(Number(saved.index)||0,TOTAL-1)),answers:saved.answers,started:!!saved.started};
+   $("resumeBtn").classList.remove("hidden");
+  }
+ }catch(e){localStorage.removeItem("lifeos-v2");}
+}
+function show(name){
+ Object.values(screens).forEach(el=>el&&el.classList.remove("active"));
+ if(screens[name])screens[name].classList.add("active");
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+function render(){
+ const q=questions[state.index];
+ if(!q)return;
+ const a=state.answers[q.id]||{};
+ const u=UI[lang];
+ $("categoryLabel").textContent=(lang==="bn"?(CAT_BN[q.category]||q.category):q.category).toUpperCase();
+ $("questionTitle").textContent=lang==="bn"?"আপনার "+q.topic+" নিয়ে কোনটি আপনার সঙ্গে সবচেয়ে বেশি মেলে?":q.text;
+ $("currentNo").textContent=String(state.index+1);
+ $("progressBar").style.width=((state.index+1)/TOTAL*100)+"%";
+ $("questionMeta").textContent=u.meta;
+ $("otherLabel").textContent=u.other;
+ $("otherInput").placeholder=u.placeholder;
+ $("otherInput").value=a.other||"";
+ $("options").innerHTML=q.options.map(o=>{
+   const selected=a.option===o.id;
+   const label=lang==="bn"?(o.other?u.other:o.textBN):o.text;
+   const hint=lang==="bn"?(o.other?"নিজের উত্তর":"একটি সম্ভাব্য পদ্ধতি"):o.hint;
+   return '<button type="button" class="option '+(selected?"selected":"")+'" data-id="'+o.id+'"><span class="dot">✓</span><span><b>'+label+'</b><small>'+hint+'</small></span></button>';
+ }).join("");
+ document.querySelectorAll("#options .option").forEach(btn=>btn.addEventListener("click",()=>choose(btn.dataset.id)));
+ $("otherWrap").classList.toggle("hidden",a.option!=="other");
+ $("nextBtn").disabled=!a.option;
+ $("nextBtn").textContent=state.index===TOTAL-1?u.build:u.next;
+ $("backBtn").textContent=u.back;
+ $("bnBtn").classList.toggle("active",lang==="bn");
+ $("enBtn").classList.toggle("active",lang==="en");
+}
+function choose(id){
  const q=questions[state.index];
  state.answers[q.id]={option:id,other:id==="other"?$("otherInput").value:""};
- render(); save();
+ render();save();
+ if(id==="other")$("otherInput").focus();
 }
-$("otherInput").oninput=()=>{
- const q=questions[state.index];
- if(state.answers[q.id]){state.answers[q.id].other=$("otherInput").value;save();}
-};
-$("startBtn").onclick=()=>{
- state={index:0,answers:{},started:true};
- save(); show("assessment"); render();
-};
-$("resumeBtn").onclick=()=>{show("assessment");render();};
-$("resetBtn").onclick=()=>{
- if(confirm(lang==="bn"?"সব saved progress মুছে ফেলবেন?":"Reset all saved progress?")){
-   localStorage.removeItem("lifeos-v1");
-   state={index:0,answers:{},started:false};
-   $("resumeBtn").classList.add("hidden"); show("intro");
- }
-};
-$("backBtn").onclick=()=>{
- if(state.index>0){state.index--;render();save();}
-};
-$("nextBtn").onclick=()=>{
+function next(){
  const q=questions[state.index];
  if(!state.answers[q.id]?.option)return;
  if(state.index<TOTAL-1){state.index++;render();save();}
  else{results();show("results");}
-};
-$("retakeBtn").onclick=()=>{
- state={index:0,answers:{},started:true};
- save();show("assessment");render();
-};
-function score(){
- const s=Object.fromEntries(DIMS.map(d=>[d,0]));
- const c=Object.fromEntries(DIMS.map(d=>[d,0]));
- Object.entries(state.answers).forEach(([id,a])=>{
-   const q=questions.find(x=>x.id==id);
-   const o=q&&q.options.find(x=>x.id===a.option);
-   if(q&&o&&!o.other){s[q.dimension]+=5-o.value;c[q.dimension]+=5;}
- });
- const n={};
- DIMS.forEach(d=>n[d]=Math.round((s[d]/Math.max(1,c[d]))*100));
- return n;
 }
-function sorted(s,asc){return Object.entries(s).sort((a,b)=>asc?a[1]-b[1]:b[1]-a[1]);}
+function score(){
+ const sums=Object.fromEntries(DIMS.map(d=>[d,0]));
+ const counts=Object.fromEntries(DIMS.map(d=>[d,0]));
+ Object.entries(state.answers).forEach(([id,a])=>{
+   const q=questions.find(x=>x.id===Number(id));
+   const o=q&&q.options.find(x=>x.id===a.option);
+   if(q&&o&&!o.other){sums[q.dimension]+=5-o.value;counts[q.dimension]+=5;}
+ });
+ return Object.fromEntries(DIMS.map(d=>[d,counts[d]?Math.round(sums[d]/counts[d]*100):0]));
+}
 function results(){
- const sc=score(),hi=sorted(sc,false).slice(0,4),lo=sorted(sc,true).slice(0,4);
- $("resultSummary").textContent=lang==="bn"?"আপনার ফলাফল আপনার উত্তরগুলোর pattern দেখায়। এগুলো diagnosis বা ভবিষ্যদ্বাণী নয়।":"Your results summarize answer patterns; they are not diagnoses or predictions.";
- $("profileGrid").innerHTML=DIMS.map(d=>'<div class="profile-card"><div class="label">'+(lang==="bn"?(BN_CAT[d]||d):d).toUpperCase()+'</div><div class="score">'+sc[d]+'</div><div class="meter"><span style="width:'+sc[d]+'%"></span></div></div>').join("");
- $("drivers").innerHTML="<ul>"+hi.map(x=>"<li><b>"+x[0]+"</b> — "+x[1]+"/100</li>").join("")+"</ul>";
- $("bottlenecks").innerHTML="<ul>"+lo.map(x=>"<li><b>"+x[0]+"</b> — "+x[1]+"/100</li>").join("")+"</ul>";
- $("roadmap").innerHTML=lang==="bn"?"<ul><li>একটি প্রধান ৯০ দিনের লক্ষ্য ঠিক করুন।</li><li>একটি measurable ৩০ দিনের milestone নিন।</li><li>প্রতি সপ্তাহে ৩–৫টি focus block রাখুন।</li><li>প্রতি সপ্তাহে ফলাফল, বাধা ও পরবর্তী পদক্ষেপ review করুন।</li></ul>":"<ul><li>Choose one primary 90-day outcome.</li><li>Set one measurable 30-day milestone.</li><li>Protect 3–5 recurring focus blocks every week.</li><li>Review weekly: evidence, obstacle, next action.</li></ul>";
+ const sc=score();
+ const hi=[...Object.entries(sc)].sort((a,b)=>b[1]-a[1]).slice(0,4);
+ const lo=[...Object.entries(sc)].sort((a,b)=>a[1]-b[1]).slice(0,4);
+ $("resultSummary").textContent=lang==="bn"?"আপনার ফলাফল আপনার উত্তরগুলোর pattern দেখায়; এগুলো diagnosis বা ভবিষ্যদ্বাণী নয়।":"Your results summarize answer patterns; they are not diagnoses or predictions.";
+ $("profileGrid").innerHTML=DIMS.map(d=>'<div class="profile-card"><div class="label">'+(lang==="bn"?(DIMS_BN[d]||d):d).toUpperCase()+'</div><div class="score">'+sc[d]+'</div><div class="meter"><span style="width:'+sc[d]+'%"></span></div></div>').join("");
+ $("drivers").innerHTML="<ul>"+hi.map(x=>"<li><b>"+(lang==="bn"?(DIMS_BN[x[0]]||x[0]):x[0])+"</b> — "+x[1]+"/100</li>").join("")+"</ul>";
+ $("bottlenecks").innerHTML="<ul>"+lo.map(x=>"<li><b>"+(lang==="bn"?(DIMS_BN[x[0]]||x[0]):x[0])+"</b> — "+x[1]+"/100</li>").join("")+"</ul>";
+ $("roadmap").innerHTML=lang==="bn"?"<ul><li>একটি প্রধান ৯০ দিনের লক্ষ্য ঠিক করুন।</li><li>একটি measurable ৩০ দিনের milestone ঠিক করুন।</li><li>প্রতি সপ্তাহে ৩–৫টি focus block রাখুন।</li><li>প্রতি সপ্তাহে ফলাফল, বাধা ও পরবর্তী পদক্ষেপ review করুন।</li></ul>":"<ul><li>Choose one primary 90-day outcome.</li><li>Set one measurable 30-day milestone.</li><li>Protect 3–5 recurring focus blocks every week.</li><li>Review weekly: evidence, obstacle, next action.</li></ul>";
  $("promptOutput").value=makePrompt(sc,hi,lo);
+ $("resultsEyebrow").textContent=lang==="bn"?"আপনার জীবন-ব্লুপ্রিন্ট":"YOUR LIFE BLUEPRINT";
+ $("resultsTitle").textContent=lang==="bn"?"আপনার জীবনের আরও পরিষ্কার মানচিত্র":"A clearer map of what matters.";
+ $("driversLabel").textContent=lang==="bn"?"প্রধান চালিকা শক্তি":"PRIMARY DRIVERS";
+ $("bottlenecksLabel").textContent=lang==="bn"?"যেখানে system দরকার":"PRACTICAL BOTTLENECKS";
+ $("roadmapLabel").textContent=lang==="bn"?"পরবর্তী ৯০ দিন":"NEXT 90 DAYS";
+ $("promptTitle").textContent=lang==="bn"?"আপনার blueprint যেকোনো AI-তে ব্যবহার করুন":"Take your blueprint to any AI.";
+ $("copyBtn").textContent=lang==="bn"?"Prompt কপি করুন":"Copy prompt";
+ $("downloadBtn").textContent=lang==="bn"?".txt ডাউনলোড":"Download .txt";
+ $("retakeBtn").textContent=lang==="bn"?"আবার assessment দিন":"Retake assessment";
 }
 function makePrompt(sc,hi,lo){
  let p=lang==="bn"?"আপনি আমার Life Strategy AI। আমার সিদ্ধান্ত আমার; আপনি নিরপেক্ষভাবে তথ্য, trade-off এবং বাস্তব পরিকল্পনা দিন।\n\nLIFEOS PROFILE\n":"You are my Life Strategy AI. My decisions are mine; give me neutral information, trade-offs and practical plans.\n\nLIFEOS PROFILE\n";
- DIMS.forEach(d=>p+="- "+d+": "+sc[d]+"/100\n");
+ DIMS.forEach(d=>p+="- "+(lang==="bn"?(DIMS_BN[d]||d):d)+": "+sc[d]+"/100\n");
  p+="\n"+(lang==="bn"?"প্রধান signal:\n":"STRONGEST SIGNALS\n");
- hi.forEach(x=>p+="- "+x[0]+": "+x[1]+"/100\n");
+ hi.forEach(x=>p+="- "+(lang==="bn"?(DIMS_BN[x[0]]||x[0]):x[0])+": "+x[1]+"/100\n");
  p+="\n"+(lang==="bn"?"যেসব জায়গায় system দরকার হতে পারে:\n":"AREAS THAT MAY NEED SYSTEMS\n");
- lo.forEach(x=>p+="- "+x[0]+": "+x[1]+"/100\n");
- p+="\n"+(lang==="bn"?"পরিকল্পনা তৈরি করুন: ৫ বছর → ১ বছর → ৯০ দিন → ৩০ দিন → ৭ দিন। প্রতিটি লক্ষ্যতে outcome, metric, deadline, first action, recurring action, obstacle এবং fallback দিন।":"Build a plan: 5 years → 1 year → 90 days → 30 days → 7 days. For each goal include outcome, metric, deadline, first action, recurring action, obstacle and fallback.");
+ lo.forEach(x=>p+="- "+(lang==="bn"?(DIMS_BN[x[0]]||x[0]):x[0])+": "+x[1]+"/100\n");
+ p+="\n"+(lang==="bn"?"৫ বছর → ১ বছর → ৯০ দিন → ৩০ দিন → ৭ দিনের পরিকল্পনা তৈরি করুন। প্রতিটি লক্ষ্যতে outcome, metric, deadline, first action, recurring action, obstacle ও fallback দিন।":"Build a 5-year → 1-year → 90-day → 30-day → 7-day plan. For each goal include outcome, metric, deadline, first action, recurring action, obstacle and fallback.");
  return p;
 }
-$("copyBtn").onclick=async()=>{
- try{await navigator.clipboard.writeText($("promptOutput").value);$("copyBtn").textContent=lang==="bn"?"কপি হয়েছে ✓":"Copied ✓";setTimeout(()=>renderResultsUI(),1200);}
- catch(e){$("promptOutput").select();document.execCommand("copy");}
-};
-$("downloadBtn").onclick=()=>{
- const b=new Blob([$("promptOutput").value],{type:"text/plain;charset=utf-8"});
- const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="lifeos-master-prompt.txt";a.click();URL.revokeObjectURL(a.href);
-};
-$("chatgptBtn").onclick=()=>window.open("https://chatgpt.com/","_blank");
-$("claudeBtn").onclick=()=>window.open("https://claude.ai/","_blank");
-$("geminiBtn").onclick=()=>window.open("https://gemini.google.com/","_blank");
-function renderResultsUI(){
- $("copyBtn").textContent=lang==="bn"?"Prompt কপি করুন":"Copy prompt";
+function setLanguage(nextLang){
+ lang=nextLang;
+ localStorage.setItem("lifeos-lang",lang);
+ render();
+ if(screens.results.classList.contains("active"))results();
 }
-load();
+function resetAll(){
+ if(!confirm(lang==="bn"?"সব saved progress মুছে ফেলবেন?":"Reset all saved progress?"))return;
+ localStorage.removeItem("lifeos-v2");
+ localStorage.removeItem("lifeos-v1");
+ state={index:0,answers:{},started:false};
+ $("resumeBtn").classList.add("hidden");
+ show("intro");
+}
+function downloadPrompt(){
+ const blob=new Blob([$("promptOutput").value],{type:"text/plain;charset=utf-8"});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");a.href=url;a.download="lifeos-master-prompt.txt";document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function copyPrompt(){
+ try{await navigator.clipboard.writeText($("promptOutput").value);}
+ catch(e){$("promptOutput").select();document.execCommand("copy");}
+ $("copyBtn").textContent=lang==="bn"?"কপি হয়েছে ✓":"Copied ✓";
+ setTimeout(()=>{$("copyBtn").textContent=lang==="bn"?"Prompt কপি করুন":"Copy prompt";},1200);
+}
+function init(){
+ $("startBtn").addEventListener("click",()=>{state={index:0,answers:{},started:true};save();show("assessment");render();});
+ $("resumeBtn").addEventListener("click",()=>{show("assessment");render();});
+ $("resetBtn").addEventListener("click",resetAll);
+ $("backBtn").addEventListener("click",()=>{if(state.index>0){state.index--;render();save();}});
+ $("nextBtn").addEventListener("click",next);
+ $("otherInput").addEventListener("input",()=>{const q=questions[state.index];if(state.answers[q.id]){state.answers[q.id].other=$("otherInput").value;save();}});
+ $("retakeBtn").addEventListener("click",()=>{state={index:0,answers:{},started:true};save();show("assessment");render();});
+ $("copyBtn").addEventListener("click",copyPrompt);
+ $("downloadBtn").addEventListener("click",downloadPrompt);
+ $("chatgptBtn").addEventListener("click",()=>window.open("https://chatgpt.com/","_blank"));
+ $("claudeBtn").addEventListener("click",()=>window.open("https://claude.ai/","_blank"));
+ $("geminiBtn").addEventListener("click",()=>window.open("https://gemini.google.com/","_blank"));
+ $("bnBtn").addEventListener("click",()=>setLanguage("bn"));
+ $("enBtn").addEventListener("click",()=>setLanguage("en"));
+ load();
+ render();
+}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
