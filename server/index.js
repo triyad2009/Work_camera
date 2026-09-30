@@ -1,1 +1,23 @@
-const express=require("express"),http=require("http"),path=require("path"),crypto=require("crypto"),{WebSocketServer}=require("ws");const PORT=Number(process.env.PORT||4872),app=express(),server=http.createServer(app),wss=new WebSocketServer({server}),rooms=new Map();const id=()=>crypto.randomBytes(9).toString("base64url"),send=(w,m)=>w&&w.readyState===1&&w.send(JSON.stringify(m));app.use(express.static(path.join(__dirname,"..","web")));app.get("/health",(_,r)=>r.json({ok:true,service:"Work Camera"}));app.get("/api/invite",(_,r)=>{const room=id();rooms.set(room,{owner:null,member:null,createdAt:Date.now()});r.json({room})});app.get("/join/:room",(q,r)=>r.sendFile(path.join(__dirname,"..","web","member.html")));app.get("/view/:room",(q,r)=>r.sendFile(path.join(__dirname,"..","web","owner.html")));wss.on("connection",ws=>{let roomId,role;ws.on("message",raw=>{let m;try{m=JSON.parse(raw)}catch{return}if(m.type==="join"){roomId=String(m.room||"");role=m.role==="owner"?"owner":"member";if(!rooms.has(roomId))rooms.set(roomId,{owner:null,member:null,createdAt:Date.now()});const room=rooms.get(roomId);room[role]=ws;send(ws,{type:"joined",role});const peer=role==="owner"?room.member:room.owner;if(peer){send(peer,{type:"peer-ready"});send(ws,{type:"peer-ready"})}return}if(!roomId)return;const room=rooms.get(roomId),peer=role==="owner"?room?.member:room?.owner;if(peer&&["offer","answer","ice","stop","presence"].includes(m.type))send(peer,m)});ws.on("close",()=>{const room=rooms.get(roomId);if(!room)return;if(room[role]===ws)room[role]=null;const peer=role==="owner"?room.member:room.owner;if(peer)send(peer,{type:"peer-left"});if(!room.owner&&!room.member)rooms.delete(roomId)})});server.listen(PORT,"0.0.0.0",()=>console.log("Work Camera server: http://localhost:"+PORT));
+const express=require("express");
+const http=require("http");
+const WebSocket=require("ws");
+const crypto=require("crypto");
+const path=require("path");
+const app=express();
+const server=http.createServer(app);
+const wss=new WebSocket.Server({server});
+const rooms=new Map();
+app.use(express.json());
+app.use(express.static(path.join(__dirname,"..","web")));
+app.get("/health",(req,res)=>res.json({ok:true,service:"Work Camera"}));
+app.post("/api/invite",(req,res)=>{const id=crypto.randomBytes(6).toString("base64url");rooms.set(id,{owner:null,member:null});res.json({room:id});});
+app.get("/join/:room",(req,res)=>res.sendFile(path.join(__dirname,"..","web","member.html")));
+app.get("/view/:room",(req,res)=>res.sendFile(path.join(__dirname,"..","web","owner.html")));
+function send(ws,msg){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(msg));}
+wss.on("connection",ws=>{ws.on("message",(raw,isBinary)=>{if(isBinary){const r=ws.room;if(r?.usbViewer&&r.usbViewer.readyState===WebSocket.OPEN)r.usbViewer.send(raw);return;}let m;try{m=JSON.parse(raw)}catch{return;}if(m.type==="usb"){
+const room=rooms.get("usb-local")||{owner:null,member:null};rooms.set("usb-local",room);
+if(m.role==="phone"){room.member=ws;ws.room=room;send(ws,{type:"usb-ready",ok:true});if(room.owner)send(room.owner,{type:"usb-phone-ready"});}
+if(m.role==="pc"){room.owner=ws;room.usbViewer=ws;ws.room=room;send(ws,{type:"usb-ready",ok:true});if(room.member)send(room.member,{type:"usb-pc-ready"});}
+if(m.role==="meta"&&room.usbViewer)send(room.usbViewer,m);return;}
+const room=rooms.get(m.room);if(!room)return;if(m.role==="owner")room.owner=ws;if(m.role==="member")room.member=ws;ws.room=room;send(ws,{type:"role",role:m.role});if(room.owner&&room.member){send(room.owner,{type:"peer-ready"});send(room.member,{type:"peer-ready"});}if(m.to){const target=m.to==="owner"?room.owner:room.member;send(target,m);}});ws.on("close",()=>{const r=ws.room;if(!r)return;if(r.owner===ws)r.owner=null;if(r.member===ws)r.member=null;if(r.usbViewer===ws)r.usbViewer=null;});});
+server.listen(Number(process.env.PORT||4872),"0.0.0.0",()=>console.log("Work Camera server: http://localhost:"+Number(process.env.PORT||4872)));
