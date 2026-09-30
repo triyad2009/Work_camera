@@ -50,11 +50,11 @@ function buildQuestions(){
  for(const [cat,dim,topics] of cats){
    topics.forEach(topic=>{
      const frame=qFrames[cat]||"How do you feel about {topic}?";
-     const texts=answerFrames[0];
+     const texts=answerFrames[0]; const bnTexts=["এখনই কাজ শুরু করব","আগে পরিষ্কার পরিকল্পনা করব","ছোটভাবে পরীক্ষা করে দেখব","অভিজ্ঞ কারও পরামর্শ নেব","সময় ও সক্ষমতার সঙ্গে মিলিয়ে করব","সিদ্ধান্তের আগে আরও তথ্য নেব"];
      out.push({
        id:id++,category:cat,dimension:dim,topic,
        text:frame.replace("{topic}",topic),
-       options:texts.map((t,i)=>({id:String(i),text:t.replace("{topic}",topic),hint:["Take action","Make it practical","Learn by doing","Get another perspective","Protect balance","Gather evidence"][i],value:i,tags:[dim,cat]})).concat([
+       options:texts.map((t,i)=>({id:String(i),text:t.replace("{topic}",topic),textBN:bnTexts[i],hint:["Take action","Make it practical","Learn by doing","Get another perspective","Protect balance","Gather evidence"][i],value:i,tags:[dim,cat]})).concat([
          {id:"other",text:"Other — explain it in your own words",hint:"Your own answer",value:0,other:true,tags:["Custom"]}
        ])
      });
@@ -72,7 +72,7 @@ const screens={intro:$("intro"),assessment:$("assessment"),results:$("results")}
 function save(){localStorage.setItem("lifeos-v1",JSON.stringify(state));$("saveStatus").textContent="Saved";setTimeout(()=>$("saveStatus").textContent="Ready",900)}
 function load(){try{const s=JSON.parse(localStorage.getItem("lifeos-v1"));if(s&&s.answers){state=s;$("resumeBtn").classList.remove("hidden")}}catch(e){}}
 function show(k){Object.values(screens).forEach(x=>x.classList.remove("active"));screens[k].classList.add("active");scrollTo({top:0,behavior:"smooth"})}
-function render(){const q=questions[state.index],a=state.answers[q.id]||{},u=UI[lang];$("categoryLabel").textContent=(lang==="bn"?(BN_CAT[q.category]||q.category):q.category).toUpperCase();$("questionTitle").textContent=lang==="bn"?"এই বিষয়টি নিয়ে আপনার জন্য কোনটি সবচেয়ে গুরুত্বপূর্ণ? "+q.topic+"?":q.text;$("currentNo").textContent=state.index+1;$("progressBar").style.width=((state.index+1)/TOTAL*100)+"%";$("questionMeta").textContent=u.meta;$("options").innerHTML=q.options.map(o=>'<button class="option '+(a.option===o.id?"selected":"")+'" data-id="'+o.id+'"><span class="dot">✓</span><span><b>'+ (lang==="bn"?(o.other?u.other:o.text):o.text) +'</b><small>'+ (lang==="bn"?(o.other?"নিজের উত্তর":"একটি সম্ভাব্য পথ"):o.hint) +'</small></span></button>').join("");$("otherWrap").classList.toggle("hidden",a.option!=="other");$("otherInput").value=a.other||"";$("otherInput").placeholder=u.placeholder;$("nextBtn").disabled=!a.option;$("nextBtn").textContent=state.index===TOTAL-1?u.build:u.next;document.querySelectorAll(".option").forEach(b=>b.onclick=()=>choose(b.dataset.id));$("backBtn").textContent=u.back;$("otherLabel").textContent=u.other};
+function render(){const q=questions[state.index],a=state.answers[q.id]||{},u=UI[lang];$("categoryLabel").textContent=(lang==="bn"?(BN_CAT[q.category]||q.category):q.category).toUpperCase();$("questionTitle").textContent=lang==="bn"?"এই বিষয়টি নিয়ে আপনার জন্য কোনটি সবচেয়ে গুরুত্বপূর্ণ? "+q.topic+"?":q.text;$("currentNo").textContent=state.index+1;$("progressBar").style.width=((state.index+1)/TOTAL*100)+"%";$("questionMeta").textContent=u.meta;$("options").innerHTML=q.options.map(o=>'<button class="option '+(a.option===o.id?"selected":"")+'" data-id="'+o.id+'"><span class="dot">✓</span><span><b>'+ (lang==="bn"?(o.other?u.other:o.textBN):o.text) +'</b><small>'+ (lang==="bn"?(o.other?"নিজের উত্তর":"একটি সম্ভাব্য পথ"):o.hint) +'</small></span></button>').join("");$("otherWrap").classList.toggle("hidden",a.option!=="other");$("otherInput").value=a.other||"";$("otherInput").placeholder=u.placeholder;$("nextBtn").disabled=!a.option;$("nextBtn").textContent=state.index===TOTAL-1?u.build:u.next;document.querySelectorAll(".option").forEach(b=>b.onclick=()=>choose(b.dataset.id));$("backBtn").textContent=u.back;$("otherLabel").textContent=u.other};
 $("bnBtn").onclick=()=>{lang="bn";localStorage.setItem("lifeos-lang","bn");render();};
 $("enBtn").onclick=()=>{lang="en";localStorage.setItem("lifeos-lang","en");render();};
 function applyLangButtons(){$("bnBtn").classList.toggle("active",lang==="bn");$("enBtn").classList.toggle("active",lang==="en");}
